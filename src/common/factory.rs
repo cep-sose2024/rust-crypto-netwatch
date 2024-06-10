@@ -1,4 +1,7 @@
-use super::traits::{log_config::LogConfig, module_provider::Provider};
+use super::{
+    crypto::EncryptionMode,
+    traits::{log_config::LogConfig, module_provider::Provider},
+};
 #[cfg(feature = "hsm")]
 use crate::hsm::core::instance::{HsmInstance, HsmType};
 #[cfg(feature = "tpm")]
@@ -95,6 +98,15 @@ impl SecModules {
 
         instances.get(&module).cloned()
     }
+
+    pub fn get_capabilities(module: SecurityModule) -> Vec<EncryptionMode> {
+        match module {
+            #[cfg(feature = "hsm")]
+            SecurityModule::Hsm(hsm_type) => HsmInstance::get_capabilities(hsm_type),
+            #[cfg(feature = "tpm")]
+            SecurityModule::Tpm(tpm_type) => TpmInstance::get_capabilities(tpm_type),
+        }
+    }
 }
 
 /// Represents a specific instance of a security module.
@@ -132,7 +144,6 @@ impl SecModule {
             SecurityModule::Hsm(hsm_type) => Some(HsmInstance::create_instance(key_id, hsm_type)),
             #[cfg(feature = "tpm")]
             SecurityModule::Tpm(tpm_type) => Some(TpmInstance::create_instance(key_id, tpm_type)),
-            // _ => unimplemented!(),
         }
     }
 }
